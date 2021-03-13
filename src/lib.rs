@@ -2,6 +2,9 @@ use exitfailure::ExitFailure;
 use reqwest::Url;
 use serde_derive::{Deserialize, Serialize};
 use structopt::StructOpt;
+#[allow(unused_imports)]
+use ansi_term::{Color, Style};
+use ansi_term::ANSIGenericString;
 
 #[derive(StructOpt)]
 pub struct Input {
@@ -19,6 +22,7 @@ pub struct Response {
 
 impl Response {
     pub async fn get(city: &String) -> Result<Self, ExitFailure> {
+        // Add your API Key here
         let appid = String::from("");
         let url = format!(
             "https://api.openweathermap.org/data/2.5/\
@@ -71,20 +75,33 @@ pub fn print_response(response: Response) {
     println!(
         "\nCurrent Weather Information in {}, {}:\n\
     Weather: {}\n\
-    Current Temperature: {:.2} °C\n\
-    Highest Temperature: {:.2} °C\n\
-    Lowest Temperature: {:.2} °C\n\
+    Current Temperature: {} °C\n\
+    Highest Temperature: {} °C\n\
+    Lowest Temperature: {} °C\n\
     Feels like: {:.2} °C\n\
     Air Pressure: {} kPa\n\
     Humidity: {}%\n",
         response.name,
         response.sys.country,
         response.weather.weather_details.main,
-        response.main.temp - 273.15,
-        response.main.temp_max - 273.15,
-        response.main.temp_min - 273.15,
-        response.main.feels_like - 273.15,
+        paint_temp(response.main.temp - 273.15),
+        paint_temp(response.main.temp_max - 273.15),
+        paint_temp(response.main.temp_min - 273.15),
+        paint_temp(response.main.feels_like - 273.15),
         response.main.pressure,
         response.main.humidity
     )
+}
+
+fn paint_temp<'a>(temp: f64) -> ANSIGenericString<'a, str> {
+    #[allow(illegal_floating_point_literal_pattern)]
+    let temp = match temp {
+        30.0..=100.0 =>Color::Red.paint(format!("{:.2}", temp)),
+        20.0..=30.0 => Color::Yellow.paint(format!("{:.2}", temp)),
+        10.0..=20.0 => Color::Green.paint(format!("{:.2}", temp)),
+        0.0..=10.0 => Color::Cyan.paint(format!("{:.2}", temp)),
+        -273.15..=0.0 => Color::Blue.paint(format!("{:.2}", temp)),
+        _ => Color::Red.paint(String::from("Numerous Error."))
+    };
+    temp
 }
